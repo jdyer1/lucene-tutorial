@@ -1,0 +1,4 @@
+Lucene-Tutorial
+
+The text used in the unit tests (src/test/resources/kj_new.zip) is the King James Bible, obtained from:
+https://www.wordpocket.org/bibles/download_zip/kj_new.zip
