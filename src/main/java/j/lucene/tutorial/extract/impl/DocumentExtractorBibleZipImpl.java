@@ -1,4 +1,4 @@
-package j.jdyer1.ingest.impl;
+package j.lucene.tutorial.extract.impl;
 
 import java.io.FileInputStream;
 import java.nio.file.Path;
@@ -19,18 +19,25 @@ import java.util.stream.StreamSupport;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import j.jdyer1.ingest.IngestDocument;
-import j.jdyer1.ingest.IngestDocumentProducer;
-import j.jdyer1.lucenetutorial.LuceneTutorialException;
+import j.lucene.tutorial.LuceneTutorialException;
+import j.lucene.tutorial.extract.ExtractedDocument;
+import j.lucene.tutorial.extract.DocumentExtractor;
 
-public class IngestDocumentZipProducer implements IngestDocumentProducer {
+/**
+ * This Document Extractor gets raw HTML pages, each representing a Bible
+ * chapter. A very specific zip archive format is assumed. The zip archive
+ * represents our System Of Record, where we can get the data anytime we need to
+ * recreate the Lucene index.
+ *
+ */
+public class DocumentExtractorBibleZipImpl implements DocumentExtractor {
 
 	protected static final Clock CLOCK = Clock.systemUTC();
 
 	private static final Pattern INDEX_PATTERN = Pattern.compile("^.*title=\\\"\\[(\\d+).*>([- A-Za-z0-9]+)<.*$");
 
 	@Override
-	public Stream<IngestDocument> documents(Path zipFilePath) {
+	public Stream<ExtractedDocument> documentsFromFilePath(Path zipFilePath) {
 		return StreamSupport.stream(
 				Spliterators.spliteratorUnknownSize(new IngestDocumentIterator(bookNameIndex(zipFilePath), zipFilePath),
 						Spliterator.DISTINCT & Spliterator.IMMUTABLE & Spliterator.NONNULL),
@@ -61,13 +68,13 @@ public class IngestDocumentZipProducer implements IngestDocumentProducer {
 		}
 	}
 
-	public static class IngestDocumentIterator implements Iterator<IngestDocument> {
+	public static class IngestDocumentIterator implements Iterator<ExtractedDocument> {
 
 		final Map<Integer, String> booknameByChapterId;
 		final Path zipFilePath;
 		final String source;
 
-		private IngestDocument next = null;
+		private ExtractedDocument next = null;
 		private ZipInputStream zis = null;
 		private boolean done = false;
 
@@ -84,11 +91,11 @@ public class IngestDocumentZipProducer implements IngestDocumentProducer {
 		}
 
 		@Override
-		public IngestDocument next() {
+		public ExtractedDocument next() {
 			if (!hasNext()) {
 				throw new NoSuchElementException();
 			}
-			IngestDocument val = next;
+			ExtractedDocument val = next;
 			next = null;
 			return val;
 		}
@@ -140,7 +147,7 @@ public class IngestDocumentZipProducer implements IngestDocumentProducer {
 					}
 					fields.put("add_timestamp", ZonedDateTime.now(CLOCK));
 					fields.put("source", source);
-					next = new IngestDocument(fields);
+					next = new ExtractedDocument(fields);
 				}
 			}
 		}

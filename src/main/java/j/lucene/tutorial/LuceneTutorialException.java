@@ -1,4 +1,4 @@
-package j.jdyer1.lucenetutorial;
+package j.lucene.tutorial;
 
 /**
  * This is an unchecked exception with which this application can wrap checked

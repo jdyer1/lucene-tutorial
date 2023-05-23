@@ -1,22 +1,22 @@
-package j.jdyer1.ingest;
+package j.lucene.tutorial.extract;
 
 import java.nio.file.Path;
 import java.util.stream.Stream;
 
 /**
- * Extracts files from a zip archive and outputs a stream of documents. The
+ * Extracts files from a file path and outputs a stream of documents. The
  * documents are raw data without any lossy transformations. The output of this
  * class represents a System Of Record extracted so that a Lucene index can be
  * generated from this stream.
  *
  */
-public interface IngestDocumentProducer {
+public interface DocumentExtractor {
 
 	/**
-	 * create a stream of documents from a zip archive.
+	 * Extract documents from a file path
 	 * 
-	 * @param zipFilePath
+	 * @param filePath
 	 */
-	public Stream<IngestDocument> documents(Path zipFilePath);
+	public Stream<ExtractedDocument> documentsFromFilePath(Path filePath);
 
 }

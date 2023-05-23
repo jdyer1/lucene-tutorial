@@ -1,4 +1,4 @@
-package j.jdyer1.ingest.impl;
+package j.lucene.tutorial.extract.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -15,14 +15,14 @@ import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class IngestDocumentZipProducerTest {
+class DocumentExtractorBibleZipImplTest {
 
-	private IngestDocumentZipProducer cii;
+	private DocumentExtractorBibleZipImpl cii;
 	private Path zipPath;
 
 	@BeforeEach
 	void before() {
-		this.cii = new IngestDocumentZipProducer();
+		this.cii = new DocumentExtractorBibleZipImpl();
 
 		this.zipPath = Paths.get(".").toAbsolutePath().normalize().resolve("src").resolve("test").resolve("resources")
 				.resolve("kj_new.zip");
@@ -34,7 +34,7 @@ class IngestDocumentZipProducerTest {
 
 		AtomicInteger i = new AtomicInteger();
 		Set<String> bookchapters = new HashSet<>();
-		cii.documents(zipPath).forEach(doc -> {
+		cii.documentsFromFilePath(zipPath).forEach(doc -> {
 
 			i.incrementAndGet();
 
@@ -71,7 +71,7 @@ class IngestDocumentZipProducerTest {
 			assertTrue(uppercasePattern.matcher(text).find(), (m + "; we should preserve case."));
 
 		});
-		// We should have 1,189 documents
-		assertEquals(1189, i.get(), "There should be 1,189 documents cooresponding to each Bible chapter.");
+		
+		assertEquals(1189, i.get(), "There should be 1,189 documents corresponding to each Bible chapter.");
 	}
 }
