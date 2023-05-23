@@ -1,0 +1,12 @@
+= Extract
+
+Lucene is a code library for building search engines.  Although Lucene can store data, it is not generally used as a System Of Record.  In other words, there is usually another data store that has the permanent, authoritive version of the data.  Lucene on the other hand can supplement the System Of Record, adding search functionality.  To build a Lucene index, first we must extract the data from the System of Record.
+
+Although strictly not a database, Lucene organizes data into documents and each document has one or more fields.  Additionally each field contains one or more terms.  The document-field structure closely resembles the data in a document database.  Relational data is usually denormalized before being added to a Lucene index.
+
+This example does not use Lucene at all, but represents the Extract process from a System of Record to a document containing fields.  Here, the fields contain the raw data; we will convert the data to terms in the next example.
+
+This example loads a series of Bible book chapters in HTML format, from a zip archive.  The chapters are arranged by Bible book, which are numbered from 1 to 66.  A separate file, index.htm, contains the cross-reference between the Bible book number and the Bible book name.  This could have been instead stored as a 2-table relational database.  This extract example joins these two data sources, adding the Bible book name to each document as a separate field.  The source filename and the current timestamp are also added to each document.
+
+link:../apidocs/j/lucene/tutorial/extract/impl/package-summary.html[javadoc]
+link:../../src/test/java/j/lucene/tutorial/extract/impl/DocumentExtractorBibleZipImplTest.java[unit test]

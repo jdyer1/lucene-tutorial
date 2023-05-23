@@ -56,6 +56,11 @@
 					<version>3.2.0</version>
 				</plugin>
 				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-javadoc-plugin</artifactId>
+					<version>3.5.0</version>
+				</plugin>
+				<plugin>
 					<groupId>org.asciidoctor</groupId>
 					<artifactId>asciidoctor-maven-plugin</artifactId>
 					<version>2.2.3</version>
@@ -107,6 +112,18 @@
 				</executions>
 			</plugin>
 			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<executions>
+				<execution>
+					<id>attach-javadocs</id>
+					<goals>
+						<goal>jar</goal>
+					</goals>
+				</execution>
+			</executions>
+			</plugin>
+			<plugin>
 				<groupId>org.asciidoctor</groupId>
 				<artifactId>asciidoctor-maven-plugin</artifactId>
 				<executions>
@@ -119,9 +136,9 @@
 						<configuration>
 							<sourceDirectory>${basedir}/src/docs/asciidoc</sourceDirectory>
 							<outputDirectory>${project.build.directory}/asciidoc</outputDirectory>
-							<resources>
+							<resources><resource>
 								<directory>src/docs/resources</directory>
-							</resources>
+							</resource></resources>
 							<attributes>
 								<source-highlighter>coderay</source-highlighter>
 								<imagesdir>./images</imagesdir>

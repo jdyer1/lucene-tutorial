@@ -12,10 +12,20 @@ public class ExtractedDocument {
 
 	private final Map<String, Object> contentByFieldname;
 
+	/**
+	 * Constructor.
+	 * 
+	 * @param contentByFieldname raw data by field
+	 */
 	public ExtractedDocument(Map<String, Object> contentByFieldname) {
 		this.contentByFieldname = Collections.unmodifiableMap(contentByFieldname);
 	}
 
+	/**
+	 * the document contents
+	 * 
+	 * @return map
+	 */
 	public Map<String, Object> getContentByFieldname() {
 		return contentByFieldname;
 	}

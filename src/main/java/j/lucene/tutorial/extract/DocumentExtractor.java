@@ -13,9 +13,10 @@ import java.util.stream.Stream;
 public interface DocumentExtractor {
 
 	/**
-	 * Extract documents from a file path
+	 * Extracts documents from a file
 	 * 
-	 * @param filePath
+	 * @param filePath the location
+	 * @return the document stream
 	 */
 	public Stream<ExtractedDocument> documentsFromFilePath(Path filePath);
 

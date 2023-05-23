@@ -32,6 +32,9 @@ import j.lucene.tutorial.extract.DocumentExtractor;
  */
 public class DocumentExtractorBibleZipImpl implements DocumentExtractor {
 
+	/**
+	 * The added timestamp is UTC
+	 */
 	protected static final Clock CLOCK = Clock.systemUTC();
 
 	private static final Pattern INDEX_PATTERN = Pattern.compile("^.*title=\\\"\\[(\\d+).*>([- A-Za-z0-9]+)<.*$");
@@ -68,6 +71,10 @@ public class DocumentExtractorBibleZipImpl implements DocumentExtractor {
 		}
 	}
 
+	/**
+	 * Iterator, used internally to provide the Stream
+	 *
+	 */
 	public static class IngestDocumentIterator implements Iterator<ExtractedDocument> {
 
 		final Map<Integer, String> booknameByChapterId;
