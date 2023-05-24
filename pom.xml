@@ -156,7 +156,12 @@
 	<dependencies>
 		<dependency>
 			<groupId>org.apache.lucene</groupId>
-			<artifactId>lucene-core</artifactId>
+			<artifactId>lucene-analysis-common</artifactId>
+			<version>9.6.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.lucene</groupId>
+			<artifactId>lucene-demo</artifactId>
 			<version>9.6.0</version>
 		</dependency>
 
