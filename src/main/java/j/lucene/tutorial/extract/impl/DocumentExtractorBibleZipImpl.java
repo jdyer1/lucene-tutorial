@@ -20,8 +20,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import j.lucene.tutorial.LuceneTutorialException;
-import j.lucene.tutorial.extract.ExtractedDocument;
 import j.lucene.tutorial.extract.DocumentExtractor;
+import j.lucene.tutorial.extract.ExtractedDocument;
 
 /**
  * This Document Extractor gets raw HTML pages, each representing a Bible
@@ -38,6 +38,11 @@ public class DocumentExtractorBibleZipImpl implements DocumentExtractor {
 	protected static final Clock CLOCK = Clock.systemUTC();
 
 	private static final Pattern INDEX_PATTERN = Pattern.compile("^.*title=\\\"\\[(\\d+).*>([- A-Za-z0-9]+)<.*$");
+	private static final Pattern SYNOPSIS_PATTERN1 = Pattern.compile("^.*<title>Audio.Books:.*\\\\d{1,3}.(.*)<.*$");
+	private static final Pattern SYNOPSIS_PATTERN2 = Pattern.compile("^.*<title>(.*), .*<.*$");
+	private static final Pattern KEYWORDS_PATTERN = Pattern.compile("^.*<meta name=\\\"keywords\\\" content=\\\"(.*)\\\".*$");
+	private static final Pattern KEYWORD_SPLIT_PATTERN = Pattern.compile(", ");
+	private static final Pattern NEWLINE_PATTERN = Pattern.compile("\\\n");
 
 	@Override
 	public Stream<ExtractedDocument> documentsFromFilePath(Path zipFilePath) {
@@ -148,7 +153,10 @@ public class DocumentExtractorBibleZipImpl implements DocumentExtractor {
 					fields.put("book", booknameByChapterId.get(Integer.parseInt(bookStr)));
 
 					try {
-						fields.put("text", new String(zis.readAllBytes()));
+						String text = new String(zis.readAllBytes());
+						String[] textLines = NEWLINE_PATTERN.split(text);
+						maybeAddSynopsisAndKeywords(fields, textLines);
+						fields.put("text", text);
 					} catch (Exception e) {
 						throw new LuceneTutorialException(e);
 					}
@@ -170,6 +178,50 @@ public class DocumentExtractorBibleZipImpl implements DocumentExtractor {
 			}
 		}
 
+		private void maybeAddSynopsisAndKeywords(Map<String, Object> fields, String[] textLines) {
+			boolean foundSynopsis = false;
+			boolean foundKeywords = false;
+			for (String line : textLines) {
+				if (!foundSynopsis) {
+					foundSynopsis = synopsis(fields, line);
+					if(foundSynopsis) {
+						continue;
+					}
+				}
+				foundKeywords = keywords(fields, line);
+				if (foundKeywords && foundSynopsis) {
+					return;
+				}
+			}
+		}
+		
+		private boolean synopsis(Map<String, Object> fields, String line) {
+			Matcher synopsisM = SYNOPSIS_PATTERN1.matcher(line);
+			if (synopsisM.find()) {
+				fields.put("synopsis", synopsisM.group(1));
+				return true;
+			}
+			synopsisM = SYNOPSIS_PATTERN2.matcher(line);
+			if (synopsisM.find()) {
+				fields.put("synopsis", synopsisM.group(1));
+				return true;
+			}
+			return false;
+		}
+		private boolean keywords(Map<String, Object> fields, String line) {
+			Matcher keywordM = KEYWORDS_PATTERN.matcher(line);
+			if (keywordM.find()) {
+				String[] kArr = KEYWORD_SPLIT_PATTERN.split(keywordM.group(1));
+				if(kArr[0].equals("Audio")) {
+					String[] kArr1 = new String[kArr.length-1];
+					System.arraycopy(kArr, 1, kArr1, 0, kArr1.length);
+					kArr = kArr1;
+				}
+				fields.put("keywords", kArr);
+				return true;
+			}
+			return false;
+		}
 	}
 
 }
