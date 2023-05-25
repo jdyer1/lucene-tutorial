@@ -2,6 +2,7 @@ package j.lucene.tutorial.transform.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.ZoneOffset;
@@ -9,11 +10,17 @@ import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.KeywordField;
 import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.junit.jupiter.api.AfterEach;
@@ -48,36 +55,43 @@ class DocumentTransformerHtmlBibleImplTest {
 	}
 
 	@Test
-	void test() {
+	void test() throws Exception {
 		ExtractedDocument in = new ExtractedDocument(rawFields);
 		TransformedDocument out = dt.transformExtractedDocument(in);
 		assertNotNull(out, "There should be an extracted document.");
 
 		List<Field> fields = out.getFields();
-		assertEquals(11, fields.size(), "There should be 11 fields.");
+		assertEquals(17, fields.size(), "There should be 17 fields.");
 
-		Field chapter = f("chapter", fields);
-		assertNotNull(chapter, "There should be a field for 'chapter'");
-		assertTrue(chapter instanceof IntField, "Chapter should be an IntField.");
+		List<Field> chapterL = f("chapter", fields);
+		intf(chapterL);
 
-		Field addTs = f("add_timestamp", fields);
-		assertNotNull(addTs, "There should be a field for 'add_timestamp'");
-		assertTrue(addTs instanceof LongField, "The timestamp should be a LongField.");
+		List<Field> addTsL = f("add_timestamp", fields);
+		lf(addTsL);
 
-		Field book = f("book", fields);
-		assertNotNull(book, "There should be a field for 'book'");
-		assertTrue(book instanceof StringField, "Book should be a StringField.");
+		List<Field> bookL = f("book", fields);
+		StringField book = sf(bookL);
+		assertEquals("John", book.stringValue());
+		assertNull(book.storedValue());
 
-		Field source = f("source", fields);
+		List<Field> sourceL = f("source", fields);
+		StringField source = sf(sourceL);
 		assertNotNull(source, "There should be a field for 'source'");
 		assertTrue(source instanceof StringField, "Source should be an StringField.");
 
-		Field synopsis = f("synopsis", fields);
-		assertNotNull(synopsis, "There should be a field for 'synopsis'");
-		assertTrue(synopsis instanceof TextField, "synopsis should be an TextField.");
+		TextField synopsis = tf("synopsis", fields);
+		assertNotNull(synopsis.tokenStreamValue(), "'synopsis' should have passed a TokenStream.");
+		TokenStream synopsisTs = synopsis.tokenStreamValue();
+		synopsisTs.reset();
+		assertTrue(synopsisTs.incrementToken());
+		assertEquals("raising", synopsisTs.getAttribute(CharTermAttribute.class).toString());
 
-		Field text = f("text", fields);
-		assertNotNull(text, "There should be a field for 'text'");
+		TextField text = tf("text", fields);
+		assertNotNull(text.tokenStreamValue(), "'text' should have passed a TokenStream.");
+		TokenStream textTs = text.tokenStreamValue();
+		textTs.reset();
+		assertTrue(textTs.incrementToken());
+		assertEquals("audio", textTs.getAttribute(CharTermAttribute.class).toString());
 
 		List<Field> keywords = fields.stream().filter(f -> {
 			return f.name().equals("keywords");
@@ -92,12 +106,56 @@ class DocumentTransformerHtmlBibleImplTest {
 		}
 	}
 
-	private Field f(String n, List<Field> l) {
+	private List<Field> f(String n, List<Field> l) {
 		List<Field> fl = l.stream().filter(f -> {
 			return f.name().equals(n);
 		}).toList();
-		assertEquals(1, fl.size(), "'" + n + "' should only occur once");
-		return fl.iterator().next();
+		assertEquals(2, fl.size(), "'" + n + "' should occur twice");
+		return fl;
+	}
+
+	private StringField sf(List<Field> l) {
+		Optional<StringField> sfo = l.stream().filter(StringField.class::isInstance).map(StringField.class::cast)
+				.findAny();
+		assertTrue(sfo.isPresent(), "There should be a string field.");
+		Optional<SortedDocValuesField> dfo = l.stream().filter(SortedDocValuesField.class::isInstance).map(SortedDocValuesField.class::cast)
+				.findAny();
+		assertTrue(dfo.isPresent(), "There should be a sorted doc values field.");
+		return sfo.get();
+	}
+
+	private IntField intf(List<Field> l) {
+		Optional<IntField> ifo = l.stream().filter(IntField.class::isInstance).map(IntField.class::cast).findAny();
+		assertTrue(ifo.isPresent(), "There should be an int field.");
+		Optional<SortedNumericDocValuesField> dfo = l.stream().filter(SortedNumericDocValuesField.class::isInstance).map(SortedNumericDocValuesField.class::cast)
+				.findAny();
+		assertTrue(dfo.isPresent(), "There should be a sorted numeric doc values field.");
+		return ifo.get();
+	}
+	
+	private LongField lf(List<Field> l) {
+		Optional<LongField> lfo = l.stream().filter(LongField.class::isInstance).map(LongField.class::cast).findAny();
+		assertTrue(lfo.isPresent(), "There should be a long field.");
+		Optional<SortedNumericDocValuesField> dfo = l.stream().filter(SortedNumericDocValuesField.class::isInstance).map(SortedNumericDocValuesField.class::cast)
+				.findAny();
+		assertTrue(dfo.isPresent(), "There should be a sorted numeric doc values field.");
+		return lfo.get();
+	}
+
+	private TextField tf(String n, List<Field> l) {
+		List<Field> fl = l.stream().filter(f -> {
+			return f.name().equals(n);
+		}).toList();
+		assertEquals(2, fl.size(), "'" + n + "' should occur twice");
+
+		Optional<TextField> tfO = fl.stream().filter(TextField.class::isInstance).map(TextField.class::cast).findAny();
+		assertTrue(tfO.isPresent(), "'" + n + "' should include a TextField.");
+
+		Optional<StoredField> sfO = fl.stream().filter(StoredField.class::isInstance).map(StoredField.class::cast)
+				.findAny();
+		assertTrue(sfO.isPresent(), "'" + n + "' should include a StoredField.");
+
+		return tfO.get();
 	}
 
 	private static final String raw = """
