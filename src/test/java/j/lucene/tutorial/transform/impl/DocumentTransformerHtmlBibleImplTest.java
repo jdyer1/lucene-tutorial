@@ -2,17 +2,20 @@ package j.lucene.tutorial.transform.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.KeywordField;
+import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,7 +27,6 @@ class DocumentTransformerHtmlBibleImplTest {
 
 	private DocumentTransformerHtmlBibleImpl dt;
 	private Map<String, Object> rawFields;
-	private Analyzer a;
 
 	@BeforeEach
 	void before() {
@@ -36,34 +38,66 @@ class DocumentTransformerHtmlBibleImplTest {
 		rawFields.put("synopsis", "Raising of Lazarus");
 		rawFields.put("keywords", new String[] { "just", "some", "JUNK", "not very good", "keywords" });
 		rawFields.put("text", raw);
-		
-		this.a = new StandardAnalyzer();
 
 		this.dt = new DocumentTransformerHtmlBibleImpl();
 	}
-	
+
 	@AfterEach
-	void after() {
-		this.a.close();
+	void after() throws Exception {
+		this.dt.close();
 	}
 
 	@Test
 	void test() {
 		ExtractedDocument in = new ExtractedDocument(rawFields);
-		TransformedDocument out = dt.transformExtractedDocument(a, in);
+		TransformedDocument out = dt.transformExtractedDocument(in);
 		assertNotNull(out, "There should be an extracted document.");
-		
+
 		List<Field> fields = out.getFields();
-		assertEquals(11, fields.size(), "There should be 13 fields.");
-		
-		List<Field> keywords = fields.stream().filter(f -> { return f.name().equals("keywords"); }).toList();
+		assertEquals(11, fields.size(), "There should be 11 fields.");
+
+		Field chapter = f("chapter", fields);
+		assertNotNull(chapter, "There should be a field for 'chapter'");
+		assertTrue(chapter instanceof IntField, "Chapter should be an IntField.");
+
+		Field addTs = f("add_timestamp", fields);
+		assertNotNull(addTs, "There should be a field for 'add_timestamp'");
+		assertTrue(addTs instanceof LongField, "The timestamp should be a LongField.");
+
+		Field book = f("book", fields);
+		assertNotNull(book, "There should be a field for 'book'");
+		assertTrue(book instanceof StringField, "Book should be a StringField.");
+
+		Field source = f("source", fields);
+		assertNotNull(source, "There should be a field for 'source'");
+		assertTrue(source instanceof StringField, "Source should be an StringField.");
+
+		Field synopsis = f("synopsis", fields);
+		assertNotNull(synopsis, "There should be a field for 'synopsis'");
+		assertTrue(synopsis instanceof TextField, "synopsis should be an TextField.");
+
+		Field text = f("text", fields);
+		assertNotNull(text, "There should be a field for 'text'");
+
+		List<Field> keywords = fields.stream().filter(f -> {
+			return f.name().equals("keywords");
+		}).toList();
 		assertEquals(5, keywords.size(), "Each 'keyword' should have its own Field instance");
-		
+
 		String[] orig = (String[]) rawFields.get("keywords");
-		for(int i=0; i<orig.length ; i++) {
+		for (int i = 0; i < orig.length; i++) {
 			String m = i + ": The keywords should preserve order, with no anlysis: case is preserved, etc.";
 			assertEquals(orig[i], keywords.get(i).stringValue(), m);
+			assertTrue(keywords.get(i) instanceof KeywordField, i + ": Keywords should be a KeywordField.");
 		}
+	}
+
+	private Field f(String n, List<Field> l) {
+		List<Field> fl = l.stream().filter(f -> {
+			return f.name().equals(n);
+		}).toList();
+		assertEquals(1, fl.size(), "'" + n + "' should only occur once");
+		return fl.iterator().next();
 	}
 
 	private static final String raw = """

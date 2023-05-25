@@ -1,7 +1,5 @@
 package j.lucene.tutorial.transform;
 
-import org.apache.lucene.analysis.Analyzer;
-
 import j.lucene.tutorial.extract.ExtractedDocument;
 
 /**
@@ -15,9 +13,8 @@ public interface DocumentTransformer {
 	/**
 	 * Return a TransformedDocument from an ExtractedDocument.
 	 * 
-	 * @param luceneAnalyzer the analyzer used for text fields
 	 * @param in             the raw document extracted from a System of Record
 	 * @return the transformed document
 	 */
-	public TransformedDocument transformExtractedDocument(Analyzer luceneAnalyzer, ExtractedDocument in);
+	public TransformedDocument transformExtractedDocument(ExtractedDocument in);
 }

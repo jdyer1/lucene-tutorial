@@ -1,0 +1,44 @@
+= Transform
+
+Once the raw data is extracted, we can Transform each document into a series of Lucene fields.  
+Lucene has a variety of Field Types, each with its own Java class.  
+All Lucene fields extend the class oal.Document.Field.  
+By turning the raw field name and value into an instance of a type extending oal.Document.Field, 
+we give Lucene instructions on how to process that particular data element. 
+Here decisions must be made as to how the application and its users will interact with data from Lucene.  
+How we choose to transform the data is based on those decisions.  
+For our examples, we have an interface DocumentTransformer and then we can create implementations
+based on our application and user needs.
+
+link:../apidocs/j/lucene/tutorial/transform/impl/package-summary.html[javadoc]
+
+== DocumentTransformerHtmlBibleImpl
+
+Raw field "chapter" becomes an IntField, "source" and "book" become String fields and "add_timestamp"
+becomes a LongField, with the epoch milliseconds.  All of these will be single-token fields and when indexed, 
+will need to be matched exactly.  Being single-token they are elgible to be encoded as DocValues, 
+allowing efficient sorting and faceting while also having these values available for display.  
+Assuming having the values available for display is desirable, having DocValues makes storing the data as a "stored field 
+unnecessary.
+ 
+Raw field "keywords" is indexed as multiple tokens, one per keyword in the source data.  Note some of these
+keywords include whitespace, and once indexes will need to be matched exacly, including any whitespace.  
+We used Lucene's KeywordField type, which is similar to StringField, except there is no scoring.  This is perhaps
+a bit for efficient when searching, but matches on these fields will not contribute to a document's 
+placement within search results.  Because this field has multiple tokens, we set this as a Stored field so 
+that it can be returned for display.  Docvalues are not an option,  so this field is not elgible for sorting or faceting.
+
+Raw field "synopsis" is indexed as a "text" field, being unstructured text.  
+Text fields require a Lucene Analyzer to determine how to break the text into Tokens.  Here we use the
+StandardAnalyzer, which in turn usesoal.analysis.standard StandardTokenizer, for which the javadoc links to
+Unicode Standard Annex #29 for the rules.  For the most part, Standard Analyzer splits tokens on whitespace.  
+Standard Analyzer also converts all text to lowercase and has the ability to omit common words from indexing (Stop Words).
+In our case, we do not specify any Stop Words as their usage is often not advised for best results.
+
+The main content is in raw field "text".  We also index this as a "text" field but in this case use the option to provide a java.io.Reader 
+instead of a String.  Using a Reader would allow us to stream data directly from some other persistent source.  In this case, we 
+merely use java.io.StringReader and then wrap this in Lucene's oal.analysys.charfilter.HTMLStripCharFilter.  ALl Lucene Char Filters extend
+java.io.Reader and serve to pre-process the data.  In this case, we remove HTML from the raw data before StandardAnalyzer processes it.
+
+
+link:../../src/test/java/j/lucene/tutorial/transform/impl/DocumentTransformerHtmlBibleImplTest.java[unit test]
