@@ -1,6 +1,7 @@
 package j.lucene.tutorial.load.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
@@ -32,9 +33,9 @@ import j.lucene.tutorial.extract.ExtractedDocument;
 import j.lucene.tutorial.transform.DocumentTransformer;
 import j.lucene.tutorial.transform.TransformedDocument;
 
-class LuceneLoadingCollectorTest {
+class LuceneLoadingCollectorImplTest {
 
-	private LuceneLoadingCollector llc;
+	private LuceneLoadingCollectorImpl llc;
 	private MockDocumentTransformer mdf;
 	private ExtractedDocument ed;
 	private Path tempDir;
@@ -42,7 +43,7 @@ class LuceneLoadingCollectorTest {
 	@BeforeEach
 	void before() throws Exception {
 		this.tempDir = Files.createTempDirectory(this.getClass().getSimpleName());
-		this.llc = new LuceneLoadingCollector(tempDir);
+		this.llc = new LuceneLoadingCollectorImpl(new IndexPhysicalLocation(tempDir));
 		llc.iwc = new IndexWriterConfig();
 		llc.iwc.setCodec(new SimpleTextCodec());
 		llc.postConstruct();
@@ -88,6 +89,8 @@ class LuceneLoadingCollectorTest {
 
 		assertTrue(fileContents(".dat").contains("field chapter"), "should list field 'chapter' in the 'dat' file.");
 		assertTrue(fileContents(".dat").contains("field source"), "should list field 'source' in the 'dat' file.");
+		
+		assertFalse(llc.firstFailure().isPresent());
 
 	}
 

@@ -1,0 +1,9 @@
+= Load
+
+With the document expressed as a List of Lucene Fields, we merely need to pass the individual documents to the Lucene Index writer and issue "commit" afterwards.  
+Our document loader wraps the IndexWriter in a Java collector.  This collector counts the number of successful document adds.  
+Should there be any failures, the first failure is saved to memory and both the document and the exception thrown can be retrieved.  
+
+
+
+link:../../src/test/java/j/lucene/tutorial/load/impl/LuceneLoadingCollectorImplTest.java[unit test]

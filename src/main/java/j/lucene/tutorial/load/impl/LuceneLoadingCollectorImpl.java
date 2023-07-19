@@ -1,7 +1,7 @@
 package j.lucene.tutorial.load.impl;
 
-import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -9,7 +9,6 @@ import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collector;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -18,19 +17,25 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
 import j.lucene.tutorial.LuceneTutorialException;
-import j.lucene.tutorial.load.impl.LuceneLoadingCollector.DocumentLoaderSupplierObj;
+import j.lucene.tutorial.load.LuceneLoadingCollector;
 import j.lucene.tutorial.transform.TransformedDocument;
 
-public class LuceneLoadingCollector implements Collector<TransformedDocument, DocumentLoaderSupplierObj, Long> {
+/**
+ * Loads documents by deferring to Lucene's IndexWriter. Because the Lucene
+ * IndexWriter is threadsafe, we expect to be able to use parallel streams with
+ * this collector as well.
+ *
+ */
+public class LuceneLoadingCollectorImpl implements LuceneLoadingCollector {
 
-	private final Path localDiskLocation;
+	private final IndexPhysicalLocation localDiskLocation;
 	private final AtomicLong counter;
-	private final AtomicReference<TransformedDocument> firstFailure;
+	private final AtomicReference<LuceneLoadingCollectorFailure> firstFailure;
 
 	protected DocumentLoaderSupplierObj dlso;
 	protected IndexWriterConfig iwc;
 
-	public LuceneLoadingCollector(Path localDiskLocation) {
+	public LuceneLoadingCollectorImpl(IndexPhysicalLocation localDiskLocation) {
 		this.localDiskLocation = localDiskLocation;
 		this.counter = new AtomicLong();
 		this.firstFailure = new AtomicReference<>();
@@ -44,7 +49,7 @@ public class LuceneLoadingCollector implements Collector<TransformedDocument, Do
 		iwc.setUseCompoundFile(false);
 
 		try {
-			Directory dir = FSDirectory.open(localDiskLocation);
+			Directory dir = FSDirectory.open(localDiskLocation.getLocationPath());
 			IndexWriter iw = new IndexWriter(dir, iwc);
 			this.dlso = new DocumentLoaderSupplierObj(dir, iwc, iw);
 		} catch (Exception e) {
@@ -54,13 +59,35 @@ public class LuceneLoadingCollector implements Collector<TransformedDocument, Do
 
 	public void preDestroy() {
 		check();
+		String msg = null;
+		Exception e1 = null;
 		try {
 			dlso.iw().close();
-			dlso.dir().close();
-			dlso = null;
 		} catch (Exception e) {
-			throw new LuceneTutorialException("Could not close index writer and/or directory", e);
+			msg = "Could not close index writer";
+			e1 = e;
 		}
+		try {
+			dlso.dir().close();
+		} catch (Exception e) {
+			if (e1 != null) {
+				msg = "Could not close directory";
+				e1 = e;
+			}
+		}
+		dlso = null;
+		if (msg != null) {
+			throw new LuceneTutorialException(msg, e1);
+		}
+	}
+
+	@Override
+	public Optional<LuceneLoadingCollectorFailure> firstFailure() {
+		LuceneLoadingCollectorFailure llcf = firstFailure.get();
+		if (llcf == null) {
+			return Optional.empty();
+		}
+		return Optional.of(llcf);
 	}
 
 	private void check() {
@@ -91,7 +118,7 @@ public class LuceneLoadingCollector implements Collector<TransformedDocument, Do
 					t.iw.addDocument(u.getFields());
 					counter.incrementAndGet();
 				} catch (Exception e) {
-					firstFailure.updateAndGet(f -> f == null ? u : f);
+					firstFailure.updateAndGet(f -> f == null ? new LuceneLoadingCollectorFailure(u, e) : f);
 				}
 
 			}
@@ -131,30 +158,6 @@ public class LuceneLoadingCollector implements Collector<TransformedDocument, Do
 	@Override
 	public Set<Characteristics> characteristics() {
 		return Collections.emptySet();
-	}
-
-	public class DocumentLoaderSupplierObj {
-		private final Directory dir;
-		private final IndexWriterConfig iwc;
-		private final IndexWriter iw;
-
-		public DocumentLoaderSupplierObj(Directory dir, IndexWriterConfig iwc, IndexWriter iw) {
-			this.dir = dir;
-			this.iwc = iwc;
-			this.iw = iw;
-		}
-
-		public Directory dir() {
-			return dir;
-		}
-
-		public IndexWriterConfig iwc() {
-			return iwc;
-		}
-
-		public IndexWriter iw() {
-			return iw;
-		}
 	}
 
 }

@@ -13,19 +13,18 @@ link:../apidocs/j/lucene/tutorial/transform/impl/package-summary.html[javadoc]
 
 Raw field "chapter" becomes an IntField, "source" and "book" become String fields and "add_timestamp"
 becomes a LongField, with the epoch milliseconds.  All of these will be single-token fields and when indexed, 
-will need to be matched exactly.  Each of these will produce a single token making them elgible to be additionally indexed as DocValues, 
-DocValue fields allow efficient sorting and faceting and the tokens themselves can be efficiently returned with search results.
-This makes it available to display the field data back to the user. 
+will need to be matched exactly.  Each of these will produce a single token making them elgible to be additionally indexed as DocValues. 
+DocValue fields allow efficient sorting and faceting and the tokens themselves can be efficiently returned back to the user with the search results.
  
 Raw field "keywords" is indexed as multiple tokens, one per keyword in the source data.  Note some of these
 keywords include whitespace, and queries will need to match these tokens exactly, including any whitespace. 
-We used Lucene's KeywordField type, which is similar to StringField, except there is no scoring.  Unlike StringField, matches on a KeywordField will
+We used Lucene's KeywordField type, which is similar to StringField but without scoring.  Unlike StringField, matches on a KeywordField will
 not contribute to a document's score, or placement within the search results.  Any field with multiple tokens cannot be 
 encoded as DocValues, so these cannot be used for sorting or faceting.  In order to make the data available for display, we include a separate stored field.
 
 Raw field "synopsis" is indexed as a "text" field, being unstructured text.  
 Text fields require a Lucene Analyzer to determine how to break the text into Tokens.  Here we use the
-StandardAnalyzer.  This analyzer uses oal.analysis.standard StandardTokenizer, for which the javadoc links to
+StandardAnalyzer.  This analyzer uses oal.analysis.standard.StandardTokenizer, for which the javadoc links to
 Unicode Standard Annex #29 for the token-breaking rules.  Mostly, this means that Standard Analyzer splits tokens on whitespace. 
 Standard Analyzer also converts all text to lowercase and has the ability to omit common words from indexing (Stop Words).
 In our case, we do not specify any Stop Words as their usage is often not advised for best results.
