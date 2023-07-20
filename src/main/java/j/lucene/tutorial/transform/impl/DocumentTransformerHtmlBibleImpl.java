@@ -160,7 +160,7 @@ public class DocumentTransformerHtmlBibleImpl implements DocumentTransformer, Au
 		@Override
 		void addFields(Object strArr, List<Field> luceneFields) {
 			for (String str : ((String[]) strArr)) {
-				luceneFields.add(new KeywordField(name, str, Store.YES));
+				luceneFields.add(new KeywordField(name, str.trim(), Store.YES));
 			}
 		}
 	}

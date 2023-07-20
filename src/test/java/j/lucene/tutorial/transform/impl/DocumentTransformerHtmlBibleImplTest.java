@@ -43,7 +43,7 @@ class DocumentTransformerHtmlBibleImplTest {
 		rawFields.put("book", "John");
 		rawFields.put("source", "kj_new.zip");
 		rawFields.put("synopsis", "Raising of Lazarus");
-		rawFields.put("keywords", new String[] { "just", "some", "JUNK", "not very good", "keywords" });
+		rawFields.put("keywords", new String[] { "just", "some ", " JUNK", "not very good", "keywords" });
 		rawFields.put("text", raw);
 
 		this.dt = new DocumentTransformerHtmlBibleImpl();
@@ -100,8 +100,9 @@ class DocumentTransformerHtmlBibleImplTest {
 
 		String[] orig = (String[]) rawFields.get("keywords");
 		for (int i = 0; i < orig.length; i++) {
-			String m = i + ": The keywords should preserve order, with no anlysis: case is preserved, etc.";
-			assertEquals(orig[i], keywords.get(i).stringValue(), m);
+			String m = i
+					+ ": The keywords should preserve order, with no analysis: case is preserved, etc, but we will remove leading and trailing whitespace.";
+			assertEquals(orig[i].trim(), keywords.get(i).stringValue(), m);
 			assertTrue(keywords.get(i) instanceof KeywordField, i + ": Keywords should be a KeywordField.");
 		}
 	}
@@ -118,8 +119,8 @@ class DocumentTransformerHtmlBibleImplTest {
 		Optional<StringField> sfo = l.stream().filter(StringField.class::isInstance).map(StringField.class::cast)
 				.findAny();
 		assertTrue(sfo.isPresent(), "There should be a string field.");
-		Optional<SortedDocValuesField> dfo = l.stream().filter(SortedDocValuesField.class::isInstance).map(SortedDocValuesField.class::cast)
-				.findAny();
+		Optional<SortedDocValuesField> dfo = l.stream().filter(SortedDocValuesField.class::isInstance)
+				.map(SortedDocValuesField.class::cast).findAny();
 		assertTrue(dfo.isPresent(), "There should be a sorted doc values field.");
 		return sfo.get();
 	}
@@ -127,17 +128,17 @@ class DocumentTransformerHtmlBibleImplTest {
 	private IntField intf(List<Field> l) {
 		Optional<IntField> ifo = l.stream().filter(IntField.class::isInstance).map(IntField.class::cast).findAny();
 		assertTrue(ifo.isPresent(), "There should be an int field.");
-		Optional<SortedNumericDocValuesField> dfo = l.stream().filter(SortedNumericDocValuesField.class::isInstance).map(SortedNumericDocValuesField.class::cast)
-				.findAny();
+		Optional<SortedNumericDocValuesField> dfo = l.stream().filter(SortedNumericDocValuesField.class::isInstance)
+				.map(SortedNumericDocValuesField.class::cast).findAny();
 		assertTrue(dfo.isPresent(), "There should be a sorted numeric doc values field.");
 		return ifo.get();
 	}
-	
+
 	private LongField lf(List<Field> l) {
 		Optional<LongField> lfo = l.stream().filter(LongField.class::isInstance).map(LongField.class::cast).findAny();
 		assertTrue(lfo.isPresent(), "There should be a long field.");
-		Optional<SortedNumericDocValuesField> dfo = l.stream().filter(SortedNumericDocValuesField.class::isInstance).map(SortedNumericDocValuesField.class::cast)
-				.findAny();
+		Optional<SortedNumericDocValuesField> dfo = l.stream().filter(SortedNumericDocValuesField.class::isInstance)
+				.map(SortedNumericDocValuesField.class::cast).findAny();
 		assertTrue(dfo.isPresent(), "There should be a sorted numeric doc values field.");
 		return lfo.get();
 	}

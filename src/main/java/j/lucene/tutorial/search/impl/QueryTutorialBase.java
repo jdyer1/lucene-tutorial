@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.document.StoredValue;
+import org.apache.lucene.document.StoredValue.Type;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.IndexSearcher;
@@ -59,7 +61,27 @@ public abstract class QueryTutorialBase {
 			throw new LuceneTutorialException("Must call 'postConstruct' before using.");
 		}
 	}
+	
+	private Object storedValueToObject(StoredValue sv) {
+		if(sv.getType() == Type.INTEGER) {
+			return sv.getIntValue();
+		}
+		if(sv.getType() == Type.BINARY) {
+			return sv.getBinaryValue().bytes;
+		}
+		if(sv.getType() == Type.DOUBLE) {
+			return sv.getDoubleValue();
+		}
+		if(sv.getType() == Type.FLOAT) {
+			return sv.getFloatValue();
+		}
+		if(sv.getType() == Type.LONG) {
+			return sv.getLongValue();
+		}
+		return sv.getStringValue();
+	}
 
+	@SuppressWarnings("unchecked")
 	protected SearchResults executeSearch(Query q, int maxResults) {
 		check();
 		IndexSearcher is = new IndexSearcher(dr);
@@ -70,8 +92,20 @@ public abstract class QueryTutorialBase {
 			for (ScoreDoc sd : docs.scoreDocs) {
 				Map<String, Object> fieldMap = new HashMap<>();
 				for (IndexableField field : is.storedFields().document(sd.doc)) {
-					fieldMap.put(field.name(), field.stringValue());
-				}
+					Object existing = fieldMap.get(field.name());
+					Object newValue = storedValueToObject(field.storedValue());
+					if(existing == null) {
+						fieldMap.put(field.name(), newValue);
+					} else if(existing instanceof List) {
+						((List<Object>) existing).add(newValue);
+					} else {
+						List<Object> l = new ArrayList<>(2);
+						l.add(existing);
+						l.add(newValue);
+						fieldMap.put(field.name(), l);
+					}
+					
+				}				
 				resultList.add(new SearchResult(fieldMap));
 			}
 			return new SearchResults( //
