@@ -18,8 +18,8 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.KeywordField;
 import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -63,30 +63,26 @@ class DocumentTransformerHtmlBibleImplTest {
 		List<Field> fields = out.getFields();
 		assertEquals(17, fields.size(), "There should be 17 fields.");
 
-		List<Field> chapterL = f("chapter", fields);
-		intf(chapterL);
+		checkIntField("chapter", fields);
 
-		List<Field> addTsL = f("add_timestamp", fields);
-		lf(addTsL);
+		checkLongField("add_timestamp", fields);
 
-		List<Field> bookL = f("book", fields);
-		StringField book = sf(bookL);
+		StringField book = checkStringField("book", fields);
 		assertEquals("John", book.stringValue());
 		assertNull(book.storedValue());
 
-		List<Field> sourceL = f("source", fields);
-		StringField source = sf(sourceL);
+		StringField source = checkStringField("source", fields);
 		assertNotNull(source, "There should be a field for 'source'");
 		assertTrue(source instanceof StringField, "Source should be an StringField.");
 
-		TextField synopsis = tf("synopsis", fields);
+		TextField synopsis = checkTextField("synopsis", fields);
 		assertNotNull(synopsis.tokenStreamValue(), "'synopsis' should have passed a TokenStream.");
 		TokenStream synopsisTs = synopsis.tokenStreamValue();
 		synopsisTs.reset();
 		assertTrue(synopsisTs.incrementToken());
 		assertEquals("raising", synopsisTs.getAttribute(CharTermAttribute.class).toString());
 
-		TextField text = tf("text", fields);
+		TextField text = checkTextField("text", fields);
 		assertNotNull(text.tokenStreamValue(), "'text' should have passed a TokenStream.");
 		TokenStream textTs = text.tokenStreamValue();
 		textTs.reset();
@@ -107,43 +103,41 @@ class DocumentTransformerHtmlBibleImplTest {
 		}
 	}
 
-	private List<Field> f(String n, List<Field> l) {
-		List<Field> fl = l.stream().filter(f -> {
-			return f.name().equals(n);
-		}).toList();
-		assertEquals(2, fl.size(), "'" + n + "' should occur twice");
-		return fl;
-	}
-
-	private StringField sf(List<Field> l) {
-		Optional<StringField> sfo = l.stream().filter(StringField.class::isInstance).map(StringField.class::cast)
-				.findAny();
+	private StringField checkStringField(String name, List<Field> l) {
+		Optional<StringField> sfo = l.stream().filter(f -> f.name().equals(name)).filter(StringField.class::isInstance)
+				.map(StringField.class::cast).findAny();
 		assertTrue(sfo.isPresent(), "There should be a string field.");
-		Optional<SortedDocValuesField> dfo = l.stream().filter(SortedDocValuesField.class::isInstance)
-				.map(SortedDocValuesField.class::cast).findAny();
+
+		Optional<SortedDocValuesField> dfo = l.stream().filter(f -> f.name().equals(name))
+				.filter(SortedDocValuesField.class::isInstance).map(SortedDocValuesField.class::cast).findAny();
 		assertTrue(dfo.isPresent(), "There should be a sorted doc values field.");
+
 		return sfo.get();
 	}
 
-	private IntField intf(List<Field> l) {
-		Optional<IntField> ifo = l.stream().filter(IntField.class::isInstance).map(IntField.class::cast).findAny();
+	private IntField checkIntField(String name, List<Field> l) {
+		Optional<IntField> ifo = l.stream().filter(f -> f.name().equals(name)).filter(IntField.class::isInstance)
+				.map(IntField.class::cast).findAny();
 		assertTrue(ifo.isPresent(), "There should be an int field.");
-		Optional<SortedNumericDocValuesField> dfo = l.stream().filter(SortedNumericDocValuesField.class::isInstance)
-				.map(SortedNumericDocValuesField.class::cast).findAny();
-		assertTrue(dfo.isPresent(), "There should be a sorted numeric doc values field.");
+
+		Optional<NumericDocValuesField> dfo = l.stream().filter(f -> f.name().equals(name + "_ndv"))
+				.filter(NumericDocValuesField.class::isInstance).map(NumericDocValuesField.class::cast).findAny();
+		assertTrue(dfo.isPresent(), "There should be a numeric doc values field: " + name);
+
 		return ifo.get();
 	}
 
-	private LongField lf(List<Field> l) {
-		Optional<LongField> lfo = l.stream().filter(LongField.class::isInstance).map(LongField.class::cast).findAny();
+	private LongField checkLongField(String name, List<Field> l) {
+		Optional<LongField> lfo = l.stream().filter(f -> f.name().equals(name)).filter(LongField.class::isInstance)
+				.map(LongField.class::cast).findAny();
 		assertTrue(lfo.isPresent(), "There should be a long field.");
-		Optional<SortedNumericDocValuesField> dfo = l.stream().filter(SortedNumericDocValuesField.class::isInstance)
-				.map(SortedNumericDocValuesField.class::cast).findAny();
-		assertTrue(dfo.isPresent(), "There should be a sorted numeric doc values field.");
+		Optional<NumericDocValuesField> dfo = l.stream().filter(f -> f.name().equals(name + "_ndv"))
+				.filter(NumericDocValuesField.class::isInstance).map(NumericDocValuesField.class::cast).findAny();
+		assertTrue(dfo.isPresent(), "There should be a numeric doc values field: " + name);
 		return lfo.get();
 	}
 
-	private TextField tf(String n, List<Field> l) {
+	private TextField checkTextField(String n, List<Field> l) {
 		List<Field> fl = l.stream().filter(f -> {
 			return f.name().equals(n);
 		}).toList();

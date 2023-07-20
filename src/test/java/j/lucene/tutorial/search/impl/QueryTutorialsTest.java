@@ -86,7 +86,7 @@ class QueryTutorialsTest {
 
 		SearchResult onlyChapterIn3j = thirdJohn.getResults().iterator().next();
 		Map<String, Object> fieldData = onlyChapterIn3j.getValues();
-		assertEquals(2, fieldData.size(),
+		assertEquals(6, fieldData.size(),
 				"There should be x fields as our code combined the Stored Fields with the Doc Values");
 
 		Object keywordObj = fieldData.get("keywords");
@@ -102,6 +102,21 @@ class QueryTutorialsTest {
 		assertTrue(text.contains("I have no greater joy"), "The text should be returned intact");
 		assertTrue(text.contains("<"),
 				"The HTML should have been preserved in the stored field (although it was stripped out of the index).");
+		
+		Object chapterObj = fieldData.get("chapter");
+		assertTrue(chapterObj instanceof Number);
+		Number chapter = (Number) chapterObj;
+		assertEquals(1, chapter.intValue());
+		
+		assertTrue(fieldData.get("add_timestamp") instanceof Number);
+		
+		Object bookObj = fieldData.get("book");
+		assertTrue(bookObj instanceof String);
+		assertEquals("3 John", bookObj.toString());
+		
+		Object sourceObj = fieldData.get("source");
+		assertTrue(sourceObj instanceof String);
+		assertEquals("kj_new.zip", sourceObj.toString());
 	}
 
 }

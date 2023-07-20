@@ -20,11 +20,12 @@ import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.PrintStreamInfoStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,6 +47,7 @@ class LuceneLoadingCollectorImplTest {
 		this.llc = new LuceneLoadingCollectorImpl(new IndexPhysicalLocation(tempDir));
 		llc.iwc = new IndexWriterConfig();
 		llc.iwc.setCodec(new SimpleTextCodec());
+		llc.iwc.setInfoStream(new PrintStreamInfoStream(System.out));
 		llc.postConstruct();
 
 		this.ed = new ExtractedDocument(Collections.emptyMap());
@@ -73,8 +75,8 @@ class LuceneLoadingCollectorImplTest {
 		assertTrue(fileContents(".si").contains("number of documents 5"),
 				"should say there are 5 document in the 'si' file.");
 
-		assertTrue(fileContents(".inf").contains("number of fields 2"),
-				"should say there are 2 fields in the 'inf' file.");
+		assertTrue(fileContents(".inf").contains("number of fields 3"),
+				"should say there are 3 fields in the 'inf' file.");
 
 		assertEquals(5l, Arrays.stream(fileContents(".fld").split("\\b")).filter(s -> s.equals("doc")).count(),
 				"should list 5 documents in the 'fld' file.");
@@ -114,7 +116,7 @@ class LuceneLoadingCollectorImplTest {
 
 			List<Field> fields = new ArrayList<>();
 			fields.add(new IntField("chapter", ++counter, Store.NO));
-			fields.add(new SortedNumericDocValuesField("chapter", counter));
+			fields.add(new NumericDocValuesField("chapter_df", counter));
 			fields.add(new StringField("source", "kj_new.zip", Store.NO));
 			fields.add(new SortedDocValuesField("source", new BytesRef("kj_new.zip")));
 
