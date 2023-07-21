@@ -2,7 +2,6 @@ package j.lucene.tutorial.transform.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.ZoneOffset;
@@ -61,7 +60,7 @@ class DocumentTransformerHtmlBibleImplTest {
 		assertNotNull(out, "There should be an extracted document.");
 
 		List<Field> fields = out.getFields();
-		assertEquals(17, fields.size(), "There should be 17 fields.");
+		assertEquals(19, fields.size(), "There should be 19 fields.");
 
 		checkIntField("chapter", fields);
 
@@ -69,7 +68,7 @@ class DocumentTransformerHtmlBibleImplTest {
 
 		StringField book = checkStringField("book", fields);
 		assertEquals("John", book.stringValue());
-		assertNull(book.storedValue());
+		assertNotNull(book.storedValue(), "the 'book' field should be stored for later retrieval/display");
 
 		StringField source = checkStringField("source", fields);
 		assertNotNull(source, "There should be a field for 'source'");

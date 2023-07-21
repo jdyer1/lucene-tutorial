@@ -5,17 +5,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.document.StoredValue;
 import org.apache.lucene.document.StoredValue.Type;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -35,9 +29,6 @@ import j.lucene.tutorial.search.SearchResults;
  * 
  */
 public abstract class QueryTutorialBase {
-
-	private static final Set<String> SORTED_DOC_VALUE_FIELDS = Set.of("book", "source", "synopsis");
-	private static final Set<String> NUMERIC_DOC_VALUE_FIELDS = Set.of("chapter", "add_timestamp");
 
 	protected final IndexPhysicalLocation localDiskLocation;
 
@@ -72,12 +63,9 @@ public abstract class QueryTutorialBase {
 		}
 	}
 
-	
-	
 	protected SearchResults executeSearch(Query q, int maxResults) {
 		check();
 		IndexSearcher is = new IndexSearcher(dr);
-		List<LeafReaderContext> leafContexts = is.getLeafContexts();
 		TopDocs docs;
 		try {
 			docs = is.search(q, maxResults);
@@ -85,7 +73,6 @@ public abstract class QueryTutorialBase {
 			for (ScoreDoc sd : docs.scoreDocs) {
 				Map<String, Object> fieldMap = new HashMap<>();
 				addStoredFieldsToMap(fieldMap, is, sd);
-				addDocvaluesToMap(fieldMap, leafContexts, sd);
 				resultList.add(new SearchResult(fieldMap));
 			}
 			return new SearchResults(new SearchResults.Builder() //
@@ -96,14 +83,14 @@ public abstract class QueryTutorialBase {
 		} catch (Exception e) {
 			throw new LuceneTutorialException("Could not execute query.", e);
 		}
-	}	
+	}
 
 	private void addStoredFieldsToMap(Map<String, Object> fieldMap, IndexSearcher is, ScoreDoc sd) throws IOException {
 		for (IndexableField field : is.storedFields().document(sd.doc)) {
 			addDisplayableValueToMap(fieldMap, field.name(), storedValueToObject(field.storedValue()));
 		}
 	}
-	
+
 	private Object storedValueToObject(StoredValue sv) {
 		if (sv.getType() == Type.INTEGER) {
 			return sv.getIntValue();
@@ -123,34 +110,6 @@ public abstract class QueryTutorialBase {
 		return sv.getStringValue();
 	}
 
-	/**
-	 * Get displayable values from DocValues. This is based on
-	 * org.apache.solr.search.SolrDocumentFetcher#decorateDocValueFields
-	 * 
-	 * @param fieldMap
-	 * @param leafContexts
-	 * @param sd
-	 */
-	private void addDocvaluesToMap(Map<String, Object> fieldMap, List<LeafReaderContext> leafContexts, ScoreDoc sd)
-			throws IOException {
-		int subIndex = ReaderUtil.subIndex(sd.doc, leafContexts);
-		int localId = sd.doc - leafContexts.get(subIndex).docBase;
-		LeafReader leafReader = leafContexts.get(subIndex).reader();
-		for (String fieldName : SORTED_DOC_VALUE_FIELDS) {
-			SortedDocValues sdv = leafReader.getSortedDocValues(fieldName);
-			if (sdv != null && sdv.advanceExact(localId)) {
-				String value = sdv.lookupOrd(sdv.ordValue()).utf8ToString();
-				addDisplayableValueToMap(fieldMap, fieldName, value);
-			}
-		}
-		for (String fieldName : NUMERIC_DOC_VALUE_FIELDS) {
-			NumericDocValues ndv = leafReader.getNumericDocValues(fieldName);
-			if (ndv != null && ndv.advanceExact(localId)) {
-				addDisplayableValueToMap(fieldMap, fieldName, ndv.longValue());
-			}
-		}
-	}
-	
 	@SuppressWarnings("unchecked")
 	private void addDisplayableValueToMap(Map<String, Object> fieldMap, String fieldName, Object newValue) {
 		Object existing = fieldMap.get(fieldName);

@@ -132,6 +132,7 @@ public class DocumentTransformerHtmlBibleImpl implements DocumentTransformer, Au
 		void addFields(Object zdtVal, List<Field> luceneFields) {
 			long epochMilli = ((ZonedDateTime) zdtVal).toInstant().toEpochMilli();
 			luceneFields.add(new LongPoint(name, epochMilli));
+			luceneFields.add(new StoredField(name, epochMilli));
 			luceneFields.add(new NumericDocValuesField(name, epochMilli));
 		}
 
@@ -146,6 +147,7 @@ public class DocumentTransformerHtmlBibleImpl implements DocumentTransformer, Au
 		@Override
 		void addFields(Object integerVal, List<Field> luceneFields) {
 			luceneFields.add(new IntPoint(name, (Integer) integerVal));
+			luceneFields.add(new StoredField(name, (Integer) integerVal));
 			luceneFields.add(new NumericDocValuesField(name, ((Number) integerVal).longValue()));
 		}
 
@@ -173,7 +175,7 @@ public class DocumentTransformerHtmlBibleImpl implements DocumentTransformer, Au
 
 		@Override
 		void addFields(Object o, List<Field> luceneFields) {
-			StringField strFld = new StringField(name, o.toString(), Store.NO);
+			StringField strFld = new StringField(name, o.toString(), Store.YES);
 			luceneFields.add(strFld);
 			luceneFields.add(new SortedDocValuesField(name, strFld.binaryValue()));
 		}
