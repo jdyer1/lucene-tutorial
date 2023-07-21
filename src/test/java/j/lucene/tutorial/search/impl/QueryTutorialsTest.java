@@ -8,9 +8,12 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.index.Term;
 import org.junit.jupiter.api.AfterAll;
@@ -102,21 +105,54 @@ class QueryTutorialsTest {
 		assertTrue(text.contains("I have no greater joy"), "The text should be returned intact");
 		assertTrue(text.contains("<"),
 				"The HTML should have been preserved in the stored field (although it was stripped out of the index).");
-		
+
 		Object chapterObj = fieldData.get("chapter");
 		assertTrue(chapterObj instanceof Number);
 		Number chapter = (Number) chapterObj;
 		assertEquals(1, chapter.intValue());
-		
+
 		assertTrue(fieldData.get("add_timestamp") instanceof Number);
-		
+
 		Object bookObj = fieldData.get("book");
 		assertTrue(bookObj instanceof String);
 		assertEquals("3 John", bookObj.toString());
-		
+
 		Object sourceObj = fieldData.get("source");
 		assertTrue(sourceObj instanceof String);
 		assertEquals("kj_new.zip", sourceObj.toString());
+	}
+
+	@Test
+	void testPhraseQuery() {
+		PhraseQueryTutorial pqt = new PhraseQueryTutorial(new IndexPhysicalLocation(tempDir));
+		currentTest = pqt;
+		pqt.postConstruct();
+
+		String field = "text";
+		String phrase = "slow to anger";
+		Term[] phraseTerms = Arrays.stream(phrase.split(" ")).map(str -> new Term(field, str))
+				.collect(Collectors.toList()).toArray(new Term[0]);
+
+		SearchResults slowToAnger = pqt.query(phraseTerms, 10);
+		assertEquals(8l, slowToAnger.getTotalHits(), "There should be 8 results as 8 chapters mention this phrase.");
+		assertEquals(8, slowToAnger.getResults().size(), "All 8 documents should be returned as we requested 10.");
+
+		Set<String> bookChapters = slowToAnger.getResults().stream()
+				.map(sr -> sr.getValues().get("book") + " " + sr.getValues().get("chapter"))
+				.collect(Collectors.toSet());
+		assertTrue(bookChapters.contains("Nehemiah 9"));
+		assertTrue(bookChapters.contains("Psalms 103"));
+		assertTrue(bookChapters.contains("Psalms 145"));
+		assertTrue(bookChapters.contains("Proverbs 15"));
+		assertTrue(bookChapters.contains("Proverbs 16"));
+		assertTrue(bookChapters.contains("Joel 2"));
+		assertTrue(bookChapters.contains("Jonah 4"));
+		assertTrue(bookChapters.contains("Nahum 1"));
+
+		for (int i = 0; i < slowToAnger.getResults().size(); i++) {
+			String text = slowToAnger.getResults().get(i).getValues().get("text").toString();
+			assertTrue(text.contains(phrase), i + ": Each result should have the phrase!");
+		}
 	}
 
 }
