@@ -15,9 +15,9 @@ import java.util.Optional;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.KeywordField;
-import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StoredField;
@@ -115,23 +115,23 @@ class DocumentTransformerHtmlBibleImplTest {
 		return sfo.get();
 	}
 
-	private IntField checkIntField(String name, List<Field> l) {
-		Optional<IntField> ifo = l.stream().filter(f -> f.name().equals(name)).filter(IntField.class::isInstance)
-				.map(IntField.class::cast).findAny();
+	private IntPoint checkIntField(String name, List<Field> l) {
+		Optional<IntPoint> ifo = l.stream().filter(f -> f.name().equals(name)).filter(IntPoint.class::isInstance)
+				.map(IntPoint.class::cast).findAny();
 		assertTrue(ifo.isPresent(), "There should be an int field.");
 
-		Optional<NumericDocValuesField> dfo = l.stream().filter(f -> f.name().equals(name + "_ndv"))
+		Optional<NumericDocValuesField> dfo = l.stream().filter(f -> f.name().equals(name))
 				.filter(NumericDocValuesField.class::isInstance).map(NumericDocValuesField.class::cast).findAny();
 		assertTrue(dfo.isPresent(), "There should be a numeric doc values field: " + name);
 
 		return ifo.get();
 	}
 
-	private LongField checkLongField(String name, List<Field> l) {
-		Optional<LongField> lfo = l.stream().filter(f -> f.name().equals(name)).filter(LongField.class::isInstance)
-				.map(LongField.class::cast).findAny();
+	private LongPoint checkLongField(String name, List<Field> l) {
+		Optional<LongPoint> lfo = l.stream().filter(f -> f.name().equals(name)).filter(LongPoint.class::isInstance)
+				.map(LongPoint.class::cast).findAny();
 		assertTrue(lfo.isPresent(), "There should be a long field.");
-		Optional<NumericDocValuesField> dfo = l.stream().filter(f -> f.name().equals(name + "_ndv"))
+		Optional<NumericDocValuesField> dfo = l.stream().filter(f -> f.name().equals(name))
 				.filter(NumericDocValuesField.class::isInstance).map(NumericDocValuesField.class::cast).findAny();
 		assertTrue(dfo.isPresent(), "There should be a numeric doc values field: " + name);
 		return lfo.get();

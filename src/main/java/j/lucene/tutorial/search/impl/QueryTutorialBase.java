@@ -144,7 +144,7 @@ public abstract class QueryTutorialBase {
 			}
 		}
 		for (String fieldName : NUMERIC_DOC_VALUE_FIELDS) {
-			NumericDocValues ndv = leafReader.getNumericDocValues(fieldName + "_ndv");
+			NumericDocValues ndv = leafReader.getNumericDocValues(fieldName);
 			if (ndv != null && ndv.advanceExact(localId)) {
 				addDisplayableValueToMap(fieldMap, fieldName, ndv.longValue());
 			}

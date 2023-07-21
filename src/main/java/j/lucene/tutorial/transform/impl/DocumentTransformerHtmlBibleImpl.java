@@ -14,9 +14,9 @@ import org.apache.lucene.analysis.charfilter.HTMLStripCharFilter;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.KeywordField;
-import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StoredField;
@@ -131,12 +131,8 @@ public class DocumentTransformerHtmlBibleImpl implements DocumentTransformer, Au
 		@Override
 		void addFields(Object zdtVal, List<Field> luceneFields) {
 			long epochMilli = ((ZonedDateTime) zdtVal).toInstant().toEpochMilli();
-			luceneFields.add(new LongField(name, epochMilli, Store.NO));
-
-			// TODO: if Numeric DocValues have the same name as the indexed field,
-			// IndexWriter fails with "hit exception updating document". This does not
-			// happen if using "sorted numeric doc values field".
-			luceneFields.add(new NumericDocValuesField(name + "_ndv", epochMilli));
+			luceneFields.add(new LongPoint(name, epochMilli));
+			luceneFields.add(new NumericDocValuesField(name, epochMilli));
 		}
 
 	}
@@ -149,10 +145,8 @@ public class DocumentTransformerHtmlBibleImpl implements DocumentTransformer, Au
 
 		@Override
 		void addFields(Object integerVal, List<Field> luceneFields) {
-			luceneFields.add(new IntField(name, (Integer) integerVal, Store.NO));
-
-			// TODO: see comment above
-			luceneFields.add(new NumericDocValuesField(name + "_ndv", ((Number) integerVal).longValue()));
+			luceneFields.add(new IntPoint(name, (Integer) integerVal));
+			luceneFields.add(new NumericDocValuesField(name, ((Number) integerVal).longValue()));
 		}
 
 	}
