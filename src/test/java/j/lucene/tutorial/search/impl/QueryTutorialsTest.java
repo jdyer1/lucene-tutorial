@@ -8,9 +8,9 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -26,6 +26,7 @@ import j.lucene.tutorial.load.impl.IndexPhysicalLocation;
 import j.lucene.tutorial.load.impl.LuceneLoadingCollectorImpl;
 import j.lucene.tutorial.search.SearchResult;
 import j.lucene.tutorial.search.SearchResults;
+import j.lucene.tutorial.search.impl.PhraseQueryTutorial.PhraseQueryTutorialInput;
 import j.lucene.tutorial.transform.impl.DocumentTransformerHtmlBibleImpl;
 
 class QueryTutorialsTest {
@@ -130,16 +131,12 @@ class QueryTutorialsTest {
 
 		String field = "text";
 		String phrase = "slow to anger";
-		Term[] phraseTerms = Arrays.stream(phrase.split(" ")).map(str -> new Term(field, str))
-				.collect(Collectors.toList()).toArray(new Term[0]);
 
-		SearchResults slowToAnger = pqt.query(phraseTerms, 10);
+		SearchResults slowToAnger = pqt.query(new PhraseQueryTutorialInput(field, phrase.split(" ")), 10);
 		assertEquals(8l, slowToAnger.getTotalHits(), "There should be 8 results as 8 chapters mention this phrase.");
 		assertEquals(8, slowToAnger.getResults().size(), "All 8 documents should be returned as we requested 10.");
 
-		Set<String> bookChapters = slowToAnger.getResults().stream()
-				.map(sr -> sr.getValues().get("book") + " " + sr.getValues().get("chapter"))
-				.collect(Collectors.toSet());
+		Set<String> bookChapters = bookChapters(slowToAnger);
 		assertTrue(bookChapters.contains("Nehemiah 9"));
 		assertTrue(bookChapters.contains("Psalms 103"));
 		assertTrue(bookChapters.contains("Psalms 145"));
@@ -153,6 +150,37 @@ class QueryTutorialsTest {
 			String text = slowToAnger.getResults().get(i).getValues().get("text").toString();
 			assertTrue(text.contains(phrase), i + ": Each result should have the phrase!");
 		}
+	}
+
+	@Test
+	void testSloppyPhraseQuery() {
+		PhraseQueryTutorial pqt = new PhraseQueryTutorial(new IndexPhysicalLocation(tempDir));
+		currentTest = pqt;
+		pqt.postConstruct();
+
+		String field = "text";
+		String phrase = "have earth";
+		int editDistance = 2;
+		SearchResults haveEarth = pqt.query(new PhraseQueryTutorialInput(field, editDistance, phrase.split(" ")), 10);
+		assertEquals(7, haveEarth.getTotalHits(),
+				"There should be 7 results as 7 chapters mention these two words, no more than 2 intervening words.");
+		assertEquals(7, haveEarth.getResults().size(), "All 7 documents should be returned as we requested 10.");
+		assertEquals(5, numOccurancesInResults(haveEarth, "text", "earth have"),
+				"5 of the results should contain 'earth have'.");
+		assertEquals(2, numOccurancesInResults(haveEarth, "text", "have made the earth"),
+				"2 of the results should contain 'have made the earth'.");
+
+	}
+
+	private Set<String> bookChapters(SearchResults searchResults) {
+		return searchResults.getResults().stream()
+				.map(sr -> sr.getValues().get("book") + " " + sr.getValues().get("chapter"))
+				.collect(Collectors.toSet());
+	}
+
+	private int numOccurancesInResults(SearchResults sr, String field, String match) {
+		return (int) sr.getResults().stream()
+				.filter(r -> r.getValues().get(field).toString().toLowerCase(Locale.ROOT).contains(match)).count();
 	}
 
 }
