@@ -4,14 +4,75 @@ Once the raw data is extracted, we can Transform each document into a series of 
 Lucene has a variety of Field Types, each with its own Java class extening oal.Document.Field.  
 By transforming the raw data to Lucene Fields, we give Lucene instructions on how to process that particular data element. 
 Here decisions must be made as to how the application and its users will interact with data from Lucene.  
-For our examples, we have an interface DocumentTransformer and then we can create implementations
-based on our application and user needs.
+For our examples, we have an interface DocumentTransformer and with implementation DocumentTransformerHtmlBibleImpl, which transforms 
+our bible book chapters into Lucene fields.
 
 link:../apidocs/j/lucene/tutorial/transform/impl/package-summary.html[javadoc]
 
+== Lucene's three data structures
+
+When mapping source data to Lucene fields, it is important to keep in mind the 3 Lucene data structures and their use-cases.  
+
+1. The Inverted Index (aka: Indexed)
+- This data structure is optimized for either full-text searching or exact-match lookup.  Indexing is a lossy process, so the input data cannot be 
+returned back for display or reprocessing.
+
+2. Stored Fields
+- This data structure stores the raw input so that it may be displayed to an enduser or otherwise reprocessed.
+
+3. Per-Document Values (aka: DocValues)
+- This data structure arranged the field values in a column-orient format to allow for fast sorting, filtering, and faceting (ie, drill-down within results).
+
+
+== Lucene's field types
+Lucene has a variety of field types, and each field type determines *both* the data type and also into which of the 3 data structure(s) the
+field will be included. Here are some of the many supported field types.
+
+[width="80%",cols="^5,^2,^1,^1,^1,^5",options="header"]
+|=====
+|Java Class Name|Type|Indexed?|Stored?|DocValues?|Comment|
+*Point|Numeric|Y|N|N|Accepts one or multiple values (ex: IntPoint, FloatPoint, etc)|
+*Field|Numeric|Y|Optional|Y|Combination of a single-valued *Point and a SortedNumericDocValues Field|
+StringField|Unanalyzed Text|Y|Optional|N|Use for exact-match lookup|
+TextField|Analyzed Text|Y|Optional|N|Use for full-text search|
+StoredField|Any|N|Y|N|Any data can be stored for retrieval with search results|
+NumericDocValuesField|Long Integer|N|N|Y|Include a numeric DocValue/Per-Document Value, allowing a single value|
+SortedNumericDocValuesField|Long Integer|N|N|Y|Include a numeric DocValue/Per-Document Value, allowing multiple values|
+SortedDocValuesField|Binary/String|N|N|Y|Include a string or binary DocValue/Per-Document Value, allowing a single value|
+SortedNumericDocValuesField|Binary/String|N|N|Y|Include a string or binary DocValue/Per-Document Value, allowing multiple values|
+|=====
+
+When constructing a Lucene document, you may include the same field name multiple times.  For instance, If we wanted to include an integer 
+in the Inverted Index, we could use an IntPoint.  Additionally, it we wanted to include that integer in Stored Fields so that
+we can retrieve it with search results, we can also include that integer as a StoredField.  Finally, if we wanted to sort or facet on the field
+containing an integer, we can include it a third time as a NumericDocValuesField.
+
+[source,java]
+----
+// field name is "count" and value is 123 
+new IntPoint("count", 123);
+new StoredField("count" 123);
+new NumericDocValuesField("count" 123l);
+----
+
+The same thing can be accomplished by addint a IntField, which gives us all three:
+[source,java]
+----
+// IntField is the same as a separate IntPoint and SortedNumericDocValuesField and optinally also a StoredField.
+new IntField("count", 123, Field.Store.YES);
+----
+
+While having the ability to combine "indexed", "stored" and "doc-values" on the same field, it can be confusing that a field definition 
+encodes *both* the data type and *also* which data structure(s) it is included in.  Additionally, Lucene will refuse to index a document
+if it contains a field that was used previously with an incompatible field type.  For instance, if we index a document with an IntField, 
+and then index another document with a field *having the same name* but as a NumericDocValuesField, Lucene will *silently reject* the document,
+becuase the IntField in the first document includes a NumericDocValuesField, but here we include the same name as a SortedNumericDocValuesField.
+As a general rule, for fields of the same name, it is important to be consistent with the Field Type used, per data structure.  One must be 
+especially careful for special field types like IntField that combine multiple Field Types in one.
+
 == DocumentTransformerHtmlBibleImpl
 
-Raw field "chapter" becomes an IntField, "source" and "book" become String fields and "add_timestamp"
+Raw field "chapter" becomes an IntPointField, "source" and "book" become String fields and "add_timestamp"
 becomes a LongField, with the epoch milliseconds.  All of these will be single-token fields and when indexed, 
 will need to be matched exactly.  Each of these will produce a single token making them elgible to be additionally indexed as DocValues. 
 DocValue fields allow efficient sorting and faceting and the tokens themselves can be efficiently returned back to the user with the search results.
