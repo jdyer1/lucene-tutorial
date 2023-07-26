@@ -16,6 +16,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.MultiPhraseQuery;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -169,7 +170,28 @@ class QueryTutorialsTest {
 				"5 of the results should contain 'earth have'.");
 		assertEquals(2, numOccurancesInResults(haveEarth, "text", "have made the earth"),
 				"2 of the results should contain 'have made the earth'.");
-
+	}
+	
+	@Test
+	void testMultiPhraseQuery() {
+		String field = "text";
+		
+		MultiPhraseQuery.Builder b = new MultiPhraseQuery.Builder();		
+		b.add(new Term[] { new Term(field, "gracious"), new Term(field, "merciful") });
+		b.add(new Term(field, "god"));
+		
+		MultiPhraseQueryTutorial mpqt = new MultiPhraseQueryTutorial(new IndexPhysicalLocation(tempDir));
+		currentTest = mpqt;
+		mpqt.postConstruct();
+		
+		SearchResults graciousGodOrMercifulGod = mpqt.query(b, 10);
+		assertEquals(3, graciousGodOrMercifulGod.getResults().size(), "There should be 3 chapters with 'gracious god' or 'merciful god'");
+		assertEquals(1,  numOccurancesInResults(graciousGodOrMercifulGod, "text", "gracious god"), "There should be 1 chapter with 'gracious god'");
+		assertEquals(2,  numOccurancesInResults(graciousGodOrMercifulGod, "text", "merciful god"), "There should be 2 chapters with 'merciful god'");
+		
+		
+		
+		
 	}
 
 	private Set<String> bookChapters(SearchResults searchResults) {
