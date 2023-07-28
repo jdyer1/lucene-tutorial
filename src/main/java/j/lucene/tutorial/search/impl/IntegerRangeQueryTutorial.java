@@ -8,7 +8,7 @@ import j.lucene.tutorial.search.SearchTutorial;
 import j.lucene.tutorial.search.impl.IntegerRangeQueryTutorial.IntegerRange;
 
 /**
- * Queries a Integer field over an inclusive upper/lower range.
+ * Demonstrates searching an Integer field over an inclusive upper/lower range.
  */
 public class IntegerRangeQueryTutorial extends QueryTutorialBase implements SearchTutorial<IntegerRange> {
 

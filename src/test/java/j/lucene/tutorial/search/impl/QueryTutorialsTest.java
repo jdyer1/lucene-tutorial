@@ -27,6 +27,7 @@ import j.lucene.tutorial.load.impl.IndexPhysicalLocation;
 import j.lucene.tutorial.load.impl.LuceneLoadingCollectorImpl;
 import j.lucene.tutorial.search.SearchResult;
 import j.lucene.tutorial.search.SearchResults;
+import j.lucene.tutorial.search.impl.FuzzyQueryTutorial.FuzzyText;
 import j.lucene.tutorial.search.impl.IntegerRangeQueryTutorial.IntegerRange;
 import j.lucene.tutorial.search.impl.PhraseQueryTutorial.PhraseQueryTutorialInput;
 import j.lucene.tutorial.transform.impl.DocumentTransformerHtmlBibleImpl;
@@ -172,35 +173,40 @@ class QueryTutorialsTest {
 		assertEquals(2, numOccurancesInResults(haveEarth, "text", "have made the earth"),
 				"2 of the results should contain 'have made the earth'.");
 	}
-	
+
 	@Test
 	void testMultiPhraseQuery() {
 		String field = "text";
-		
-		MultiPhraseQuery.Builder b = new MultiPhraseQuery.Builder();		
+
+		MultiPhraseQuery.Builder b = new MultiPhraseQuery.Builder();
 		b.add(new Term[] { new Term(field, "gracious"), new Term(field, "merciful") });
 		b.add(new Term(field, "god"));
-		
+
 		MultiPhraseQueryTutorial mpqt = new MultiPhraseQueryTutorial(new IndexPhysicalLocation(tempDir));
 		currentTest = mpqt;
 		mpqt.postConstruct();
-		
+
 		SearchResults graciousGodOrMercifulGod = mpqt.query(b, 10);
-		assertEquals(3, graciousGodOrMercifulGod.getResults().size(), "There should be 3 chapters with 'gracious god' or 'merciful god'");
-		assertEquals(1,  numOccurancesInResults(graciousGodOrMercifulGod, "text", "gracious god"), "There should be 1 chapter with 'gracious god'");
-		assertEquals(2,  numOccurancesInResults(graciousGodOrMercifulGod, "text", "merciful god"), "There should be 2 chapters with 'merciful god'");		
+		assertEquals(3, graciousGodOrMercifulGod.getResults().size(),
+				"There should be 3 chapters with 'gracious god' or 'merciful god'");
+		assertEquals(1, numOccurancesInResults(graciousGodOrMercifulGod, "text", "gracious god"),
+				"There should be 1 chapter with 'gracious god'");
+		assertEquals(2, numOccurancesInResults(graciousGodOrMercifulGod, "text", "merciful god"),
+				"There should be 2 chapters with 'merciful god'");
 	}
-	
+
 	@Test
 	void testRangeQuery() {
 		IntegerRangeQueryTutorial rqt = new IntegerRangeQueryTutorial(new IndexPhysicalLocation(tempDir));
 		currentTest = rqt;
 		rqt.postConstruct();
 		IntegerRange ir = new IntegerRange("chapter", 141, 150);
-		
+
 		SearchResults chapters141Through150 = rqt.query(ir, 10);
-		assertEquals(10l, chapters141Through150.getTotalHits(), "Only one Bible book has chapters numbered this high, so there should be 10 results.");
-		assertEquals(10, chapters141Through150.getResults().size(), "We should receive all 10 documents as we requested up to 10.");
+		assertEquals(10l, chapters141Through150.getTotalHits(),
+				"Only one Bible book has chapters numbered this high, so there should be 10 results.");
+		assertEquals(10, chapters141Through150.getResults().size(),
+				"We should receive all 10 documents as we requested up to 10.");
 		Set<String> bookChapters = bookChapters(chapters141Through150);
 		assertTrue(bookChapters.contains("Psalms 141"));
 		assertTrue(bookChapters.contains("Psalms 142"));
@@ -211,7 +217,24 @@ class QueryTutorialsTest {
 		assertTrue(bookChapters.contains("Psalms 147"));
 		assertTrue(bookChapters.contains("Psalms 148"));
 		assertTrue(bookChapters.contains("Psalms 149"));
-		assertTrue(bookChapters.contains("Psalms 150"));		
+		assertTrue(bookChapters.contains("Psalms 150"));
+	}
+
+	@Test
+	void testFuzzyQuery() {
+		FuzzyQueryTutorial fqt = new FuzzyQueryTutorial(new IndexPhysicalLocation(tempDir));
+		currentTest = fqt;
+		fqt.postConstruct();
+
+		assertEquals(2l, fqt.query(new FuzzyText("text", "Methuselah"), 10).getTotalHits(),
+				"Should get 2 results with the name correctly-spelled, as Methuselah is mentioned in two different chapters.");
+		assertEquals(2l, fqt.query(new FuzzyText("text", "Methuzelah"), 10).getTotalHits(),
+				"Should get 2 results with 1 spelling error, because we use the default max edit distance of 2.");
+		assertEquals(2l, fqt.query(new FuzzyText("text", "Methuselha"), 10).getTotalHits(),
+				"Should get 2 results with 2 spelling errors, because we use the default max edit distance of 2.");
+		assertEquals(0l, fqt.query(new FuzzyText("text", "Methuzelha"), 10).getTotalHits(),
+				"Should get no results with 3 spelling errors, because we use the default max edit distance of 2.");
+
 	}
 
 	private Set<String> bookChapters(SearchResults searchResults) {
