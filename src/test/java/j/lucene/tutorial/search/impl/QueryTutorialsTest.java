@@ -30,6 +30,7 @@ import j.lucene.tutorial.search.SearchResults;
 import j.lucene.tutorial.search.impl.FuzzyQueryTutorial.FuzzyText;
 import j.lucene.tutorial.search.impl.IntegerRangeQueryTutorial.IntegerRange;
 import j.lucene.tutorial.search.impl.PhraseQueryTutorial.PhraseQueryTutorialInput;
+import j.lucene.tutorial.search.impl.WildcardQueryTutorial.WildcardInput;
 import j.lucene.tutorial.transform.impl.DocumentTransformerHtmlBibleImpl;
 
 class QueryTutorialsTest {
@@ -237,6 +238,35 @@ class QueryTutorialsTest {
 
 	}
 
+	@Test
+	void testWildcardQuery() {
+		WildcardQueryTutorial wqt = new WildcardQueryTutorial(new IndexPhysicalLocation(tempDir));
+		currentTest = wqt;
+		wqt.postConstruct();
+
+		SearchResults john123 = wqt.query(new WildcardInput("book", "? John"), 10);
+		assertEquals(7l, john123.getTotalHits(), "Should get 7 chapters total.");
+		assertEquals(5, numOccurancesInResultsCaseSensitive(john123, "book", "1 John"),
+				"Should have 5 documents match for '1 John'");
+		assertEquals(1, numOccurancesInResultsCaseSensitive(john123, "book", "2 John"),
+				"Should have 1 document match for '2 John'");
+		assertEquals(1, numOccurancesInResultsCaseSensitive(john123, "book", "3 John"),
+				"Should have 1 document match for '3 John'");
+
+		SearchResults joChapters = wqt.query(new WildcardInput("book", "Jo*"), 100);
+		assertEquals(94l, joChapters.getTotalHits());
+		assertEquals(24l, numOccurancesInResultsCaseSensitive(joChapters, "book", "Joshua"),
+				"Should have 24 documents match for 'Joshua'");
+		assertEquals(42l, numOccurancesInResultsCaseSensitive(joChapters, "book", "Job"),
+				"Should have 42 documents match for 'Job'");
+		assertEquals(3l, numOccurancesInResultsCaseSensitive(joChapters, "book", "Joel"),
+				"Should have 3 documents match for 'Joel'");
+		assertEquals(4l, numOccurancesInResultsCaseSensitive(joChapters, "book", "Jonah"),
+				"Should have 4 documents match for 'Jonah'");
+		assertEquals(21l, numOccurancesInResultsCaseSensitive(joChapters, "book", "John"),
+				"Should have 21 documents match for 'John'");
+	}
+
 	private Set<String> bookChapters(SearchResults searchResults) {
 		return searchResults.getResults().stream()
 				.map(sr -> sr.getValues().get("book") + " " + sr.getValues().get("chapter"))
@@ -246,6 +276,10 @@ class QueryTutorialsTest {
 	private int numOccurancesInResults(SearchResults sr, String field, String match) {
 		return (int) sr.getResults().stream()
 				.filter(r -> r.getValues().get(field).toString().toLowerCase(Locale.ROOT).contains(match)).count();
+	}
+
+	private int numOccurancesInResultsCaseSensitive(SearchResults sr, String field, String match) {
+		return (int) sr.getResults().stream().filter(r -> r.getValues().get(field).toString().contains(match)).count();
 	}
 
 }
