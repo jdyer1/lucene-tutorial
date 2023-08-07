@@ -1,0 +1,14 @@
+= Lucene Queries
+
+Once we have loaded the indexed fields, we can search our corpus.  Here is a basic demonstration of some of the most-useful 
+Lucene query types.  The unit test below shows how each can be used to find documents.
+
+When selecting a query it is important to think about how the data was indexed.  If the data is indexed as a "string" or "keyword" field, then 
+queries that match one terms will be most appropriate.  If the data is indexed as "text" the data was split into multiple terms (often split on whitespace), and 
+quweries that match multiple terms can be used.  
+
+Numeric fields like IntPoint each have producer methods that let you find numeric data in different ways. "#newExactQuery()" and "#newRangeQuery()" 
+produce a query instance that does exactly what the name would suggest.  "#newSetQuery" finds documents matching any of the numbers you specify.
+
+
+link:../../src/test/java/j/lucene/tutorial/search/impl/QueryTutorialsTest.java[unit test]
