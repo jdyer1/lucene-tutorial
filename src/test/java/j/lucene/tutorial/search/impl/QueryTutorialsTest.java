@@ -30,6 +30,7 @@ import j.lucene.tutorial.search.SearchResults;
 import j.lucene.tutorial.search.impl.FuzzyQueryTutorial.FuzzyText;
 import j.lucene.tutorial.search.impl.IntegerRangeQueryTutorial.IntegerRange;
 import j.lucene.tutorial.search.impl.PhraseQueryTutorial.PhraseQueryTutorialInput;
+import j.lucene.tutorial.search.impl.PrefixQueryTutorial.PrefixInput;
 import j.lucene.tutorial.search.impl.WildcardQueryTutorial.WildcardInput;
 import j.lucene.tutorial.transform.impl.DocumentTransformerHtmlBibleImpl;
 
@@ -265,6 +266,18 @@ class QueryTutorialsTest {
 				"Should have 4 documents match for 'Jonah'");
 		assertEquals(21l, numOccurancesInResultsCaseSensitive(joChapters, "book", "John"),
 				"Should have 21 documents match for 'John'");
+	}
+
+	@Test
+	void testPrefixQuery() {
+		PrefixQueryTutorial pqt = new PrefixQueryTutorial(new IndexPhysicalLocation(tempDir));
+		currentTest = pqt;
+		pqt.postConstruct();
+
+		SearchResults firstCorinthians = pqt.query(new PrefixInput("book", "1 Cor"), 20);
+		assertEquals(16l, firstCorinthians.getTotalHits(), "Should have 15 documents matching '1 Corinthians'");
+		assertEquals(16, numOccurancesInResultsCaseSensitive(firstCorinthians, "book", "1 Corinthians"));
+
 	}
 
 	private Set<String> bookChapters(SearchResults searchResults) {
