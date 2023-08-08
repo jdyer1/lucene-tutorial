@@ -33,7 +33,7 @@ public class LuceneLoadingCollectorImpl implements LuceneLoadingCollector {
 	private final AtomicReference<LuceneLoadingCollectorFailure> firstFailure;
 
 	protected DocumentLoaderSupplierObj dlso;
-	protected IndexWriterConfig iwc;
+	public IndexWriterConfig iwc;
 
 	public LuceneLoadingCollectorImpl(IndexPhysicalLocation localDiskLocation) {
 		this.localDiskLocation = localDiskLocation;
@@ -79,6 +79,10 @@ public class LuceneLoadingCollectorImpl implements LuceneLoadingCollector {
 		if (msg != null) {
 			throw new LuceneTutorialException(msg, e1);
 		}
+	}
+	
+	public IndexPhysicalLocation localDiskLocation() {
+		return localDiskLocation;
 	}
 
 	@Override
